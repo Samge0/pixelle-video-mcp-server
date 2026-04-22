@@ -88,3 +88,23 @@ python generate_video.py -t "你的文本内容" -s 5 -v 1.0
 `{时间戳}_{文本前20字}_{原始文件名}.mp4`
 
 例如: `20250415_143022_这是一段测试文本_video_0.mp4`
+
+## 相关截图
+<img width="783" height="496" alt="image" src="https://github.com/user-attachments/assets/fb302d3e-f09f-48ca-9427-bd5d60dc7283" />
+
+<img width="1139" height="679" alt="image" src="https://github.com/user-attachments/assets/9c77616a-330e-4859-b8e4-052a4dc40ef5" />
+
+
+
+https://github.com/user-attachments/assets/2d23b2dc-8068-430f-bc57-f44362c9291a
+
+<img width="1098" height="607" alt="image" src="https://github.com/user-attachments/assets/96f96b56-24f4-431a-af34-fbb10f2b889b" />
+
+
+
+https://github.com/user-attachments/assets/bca2cd60-5c22-45fc-9405-957bfb2bbaf3
+
+
+
+
+
