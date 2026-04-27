@@ -5,6 +5,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Dict
 from fastmcp import FastMCP
 from generate_video import generate_video
 
@@ -45,7 +46,7 @@ async def generate_video_tool(
     url: str = "http://localhost:58501/",
     headless: bool = False,
     timeout: int = 1200
-) -> list[str]:
+) -> Dict[str, object]:
     """
     自动生成视频
 
@@ -60,7 +61,15 @@ async def generate_video_tool(
         timeout: 等待视频生成的超时时间（秒），默认 1200 (20分钟)
 
     Returns:
-        下载的视频文件路径列表
+        包含状态和文件信息的字典：
+        {
+            "status": "success",
+            "count": 2,
+            "files": [
+                {"path": "/path/to/video.mp4", "name": "video.mp4", "size": 1048576, "mimeType": "video/mp4"},
+                ...
+            ]
+        }
 
     Raises:
         ValueError: 如果 TTS 音量值不在 0.1-5.0 范围内
@@ -90,10 +99,47 @@ async def generate_video_tool(
         logger.info(f"视频生成成功，共 {len(downloaded_files)} 个文件")
         for f in downloaded_files:
             logger.info(f"  - {f}")
+
+        return {
+            "status": "success",
+            "count": len(downloaded_files),
+            "files": [
+                {
+                    "path": str(f),
+                    "name": f.name,
+                    "size": f.stat().st_size,
+                    "mimeType": "video/mp4"
+                }
+                for f in downloaded_files
+            ]
+        }
     else:
         logger.warning("视频生成失败，未返回文件")
+        return {
+            "status": "failed",
+            "count": 0,
+            "files": []
+        }
 
-    return downloaded_files
+
+@mcp.resource("video://{filename}")
+def get_video_file(filename: str) -> bytes:
+    """
+    通过 MCP Resource 协议获取视频文件内容
+
+    Args:
+        filename: 视频文件名（不含路径）
+
+    Returns:
+        视频文件的二进制内容
+    """
+    cache_dir = Path(__file__).parent / ".cache" / "videos"
+    video_path = cache_dir / filename
+
+    if not video_path.exists():
+        raise FileNotFoundError(f"视频文件不存在: {filename}")
+
+    return video_path.read_bytes()
 
 
 @mcp.resource("cache://videos")

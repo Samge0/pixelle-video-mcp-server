@@ -77,7 +77,6 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
     async with async_playwright() as p:
         msg = f"[1/4] 启动浏览器访问 {url}"
         logger.info(msg)
-        print(msg)
         browser = await p.chromium.launch(headless=headless)
         # 设置浏览器语言为中文
         context = await browser.new_context(locale="zh-CN")
@@ -87,7 +86,6 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
         # 切换到中文
         msg = "  切换语言到中文..."
         logger.info(msg)
-        print(msg)
         try:
             lang_input = await page.wait_for_selector('input[aria-label*="Language"]', timeout=5000)
             await lang_input.click()
@@ -97,21 +95,17 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
             await asyncio.sleep(0.5)
             msg = "  ✓ 语言已切换为中文"
             logger.info(msg)
-            print(msg)
         except Exception as e:
             msg = f"  ⚠ 语言切换失败，继续使用当前语言: {e}"
             logger.warning(msg)
-            print(msg)
 
         msg = f"[2/4] 输入文本: {text}"
         logger.info(msg)
-        print(msg)
         textarea = await page.wait_for_selector('textarea[aria-label="文本输入"]')
         await textarea.fill(text)
 
         msg = f"[3/4] 设置滑块值为: {slider_value}"
         logger.info(msg)
-        print(msg)
         slider = await page.wait_for_selector('div[role="slider"][aria-label="分镜数"]')
 
         # 找到滑块的轨道（滑块的父元素）
@@ -131,12 +125,10 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
         actual_value = await slider.get_attribute('aria-valuenow')
         msg = f"      滑块当前值: {actual_value}"
         logger.info(msg)
-        print(msg)
 
         # 设置TTS音量
         msg = f"      设置TTS音量为: {tts_volume:.1f}x"
         logger.info(msg)
-        print(msg)
         try:
             tts_slider = await page.wait_for_selector('div[role="slider"][aria-label="TTS音量"]', timeout=2000)
             track = await tts_slider.evaluate_handle('el => el.parentElement')
@@ -152,26 +144,21 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
             actual = float(await tts_slider.get_attribute('aria-valuenow'))
             msg = f"      ✓ TTS音量设置完成: {actual:.1f}x"
             logger.info(msg)
-            print(msg)
         except Exception as e:
             msg = f"      ⚠ TTS音量设置失败: {e}"
             logger.warning(msg)
-            print(msg)
 
         msg = "[4/4] 点击生成视频按钮"
         logger.info(msg)
-        print(msg)
         button = await page.wait_for_selector('button[data-testid="stBaseButton-primary"]:has-text("生成视频")')
         await button.click()
         msg = "✓ 按钮已点击，等待视频生成..."
         logger.info(msg)
-        print(msg)
 
         # 等待并下载视频
         timeout_minutes = timeout / 60
         msg = f"\n等待视频生成（最长{timeout_minutes:.0f}分钟）..."
         logger.info(msg)
-        print(msg)
         downloaded_files = []
 
         start_time = time.time()
@@ -183,7 +170,6 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
             if video_elements:
                 msg = f"\n找到 {len(video_elements)} 个视频"
                 logger.info(msg)
-                print(msg)
 
                 for i, video in enumerate(video_elements):
                     src = await video.get_attribute('src')
@@ -201,10 +187,8 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
 
                     msg = f"  视频URL: {src}"
                     logger.info(msg)
-                    print(msg)
                     msg = f"  保存为: {filename}"
                     logger.info(msg)
-                    print(msg)
 
                     # 下载视频
                     try:
@@ -231,20 +215,16 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
                         downloaded_files.append(str(save_path))
                         msg = f"  ✓ 下载完成: {save_path}"
                         logger.info(msg)
-                        print(msg)
                     except Exception as e:
                         msg = f"  ✗ 下载失败: {e}"
                         logger.error(msg)
-                        print(msg)
 
                 if downloaded_files:
                     msg = f"\n✓ 下载完成: {len(downloaded_files)} 个文件"
                     logger.info(msg)
-                    print(msg)
                     for f in downloaded_files:
                         msg = f"  - {Path(f).name}"
                         logger.info(msg)
-                        print(msg)
                     break
 
             await asyncio.sleep(3)
@@ -252,7 +232,6 @@ async def generate_video(text: str, slider_value: int, tts_volume: float, url: s
         if not downloaded_files:
             msg = "\n✗ 超时：未检测到视频文件"
             logger.warning(msg)
-            print(msg)
 
         await browser.close()
         return downloaded_files
@@ -275,7 +254,6 @@ async def main():
 
     # 验证TTS音量范围
     if not 0.1 <= args.volume <= 5.0:
-        print("错误: TTS音量值必须在 0.1-5.0 之间")
         return
 
     await generate_video(
