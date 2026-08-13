@@ -2,6 +2,9 @@
 
 基于 FastMCP 的视频生成 MCP 服务器，使用 Playwright 自动化操作 [Pixelle-Video](https://github.com/AIDC-AI/Pixelle-Video) 应用生成视频。
 
+
+> 🌐 **[在线宣传页](https://samge0.github.io/pixelle-video-mcp-server/)** — 可视化了解功能特性与工作流程
+
 ## 安装
 
 1. 安装 Python 依赖:

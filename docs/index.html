@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixelle Video MCP Server - 基于 FastMCP 的视频生成服务器</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+                        serif: ['Noto Serif SC', 'serif'],
+                        display: ['Manrope', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f5eefc',
+                            100: '#ebd9f7',
+                            200: '#d4b8f0',
+                            300: '#bd97e9',
+                            400: '#a676e2',
+                            500: '#ad41d8',
+                            600: '#9123b3',
+                            700: '#751b8e',
+                            800: '#5a1369',
+                            900: '#3e0b44',
+                        },
+                        neutral: {
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#262626',
+                            900: '#171717',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fafafa 0%, #f5eefc 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(173, 65, 216, 0.08);
+        }
+        
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(173, 65, 216, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ad41d8 0%, #a676e2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .icon-gradient {
+            background: linear-gradient(135deg, #ad41d8 0%, #9123b3 100%);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ad41d8 0%, #9123b3 100%);
+            box-shadow: 0 4px 15px rgba(173, 65, 216, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(173, 65, 216, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(173, 65, 216, 0.08);
+            border: 2px solid rgba(173, 65, 216, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(173, 65, 216, 0.12);
+            border-color: rgba(173, 65, 216, 0.3);
+        }
+        
+        details summary {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        details summary:hover {
+            background: rgba(173, 65, 216, 0.05);
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="font-sans text-neutral-800 antialiased">
+    <!-- Navigation -->
+    <nav class="glass-nav fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg icon-gradient flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <span class="font-display font-semibold text-lg text-neutral-800">Pixelle Video MCP</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-sm font-medium text-neutral-600 hover:text-brand-500 transition-colors">特性</a>
+                    <a href="#how-it-works" class="text-sm font-medium text-neutral-600 hover:text-brand-500 transition-colors">工作原理</a>
+                    <a href="#install" class="text-sm font-medium text-neutral-600 hover:text-brand-500 transition-colors">安装</a>
+                    <a href="#faq" class="text-sm font-medium text-neutral-600 hover:text-brand-500 transition-colors">FAQ</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="https://github.com/AIDC-AI/Pixelle-Video" target="_blank" class="hidden sm:flex items-center space-x-2 text-sm font-medium text-neutral-600 hover:text-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span>GitHub</span>
+                    </a>
+                    <button class="btn-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+                        开始使用
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center max-w-4xl mx-auto">
+                <div class="inline-flex items-center space-x-2 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full border border-brand-200 mb-8">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    <span class="text-sm font-medium text-white">基于 FastMCP 的视频生成服务器</span>
+                </div>
+                
+                <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-6 leading-tight">
+                    <span class="gradient-text">Pixelle Video MCP Server</span>
+                </h1>
+                
+                <p class="text-lg sm:text-xl text-neutral-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                    使用 Playwright 自动化操作 Pixelle-Video 应用生成视频，通过 MCP 协议无缝集成到您的 AI 工作流中
+                </p>
+                
+                <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button class="btn-primary text-white px-8 py-3.5 rounded-lg font-medium text-base w-full sm:w-auto">
+                        快速开始
+                    </button>
+                    <button class="btn-secondary text-white px-8 py-3.5 rounded-lg font-medium text-base w-full sm:w-auto flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>查看文档</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-6 lg:px-8 bg-white/30 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">强大特性</h2>
+                <p class="text-lg text-neutral-600 max-w-2xl mx-auto">为现代 AI 工作流设计的视频生成解决方案</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">自动化生成</h3>
+                    <p class="text-neutral-600 leading-relaxed">使用 Playwright 自动化浏览器操作，无需人工干预即可批量生成视频内容</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">MCP 协议支持</h3>
+                    <p class="text-neutral-600 leading-relaxed">基于 FastMCP 框架构建，完美集成到 Claude Desktop 等 AI 助手中</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">灵活配置</h3>
+                    <p class="text-neutral-600 leading-relaxed">支持自定义分镜数量、TTS 音量、超时时间等参数，满足不同场景需求</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">智能缓存</h3>
+                    <p class="text-neutral-600 leading-relaxed">内置缓存管理系统，自动保存和组织生成的视频文件，便于后续使用</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">无头模式</h3>
+                    <p class="text-neutral-600 leading-relaxed">支持无头浏览器模式，在后台静默运行，不影响其他工作</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="glass-card rounded-2xl p-6 feature-card">
+                    <div class="w-12 h-12 rounded-xl icon-gradient flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-neutral-900 mb-2">超时控制</h3>
+                    <p class="text-neutral-600 leading-relaxed">可配置超时时间，防止长时间等待，确保任务可控性</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works Section -->
+    <section id="how-it-works" class="py-20 px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">工作原理</h2>
+                <p class="text-lg text-neutral-600 max-w-2xl mx-auto">简单三步，开始生成 AI 视频</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/30 flex items-center justify-center mb-6">
+                            <span class="font-display font-bold text-white">1</span>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-neutral-900 mb-3">安装依赖</h3>
+                        <p class="text-neutral-600 leading-relaxed mb-4">安装 Python 依赖和 Playwright 浏览器</p>
+                        <div class="bg-neutral-900 rounded-lg p-4 overflow-x-auto">
+                            <code class="text-sm text-green-400">pip install -r requirements.txt</code>
+                            <br>
+                            <code class="text-sm text-green-400">playwright install chromium</code>
+                        </div>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                        <svg class="w-8 h-8 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/30 flex items-center justify-center mb-6">
+                            <span class="font-display font-bold text-white">2</span>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-neutral-900 mb-3">配置 Claude Desktop</h3>
+                        <p class="text-neutral-600 leading-relaxed mb-4">在 Claude Desktop 配置文件中添加 MCP 服务器</p>
+                        <div class="bg-neutral-900 rounded-lg p-4 overflow-x-auto">
+                            <code class="text-xs text-green-400">
+                                "mcpServers": {<br>
+                                &nbsp;&nbsp;"pixelle-video-server": {<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"command": "python",<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"args": ["path/to/server.py"]<br>
+                                &nbsp;&nbsp;}<br>
+                                }
+                            </code>
+                        </div>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                        <svg class="w-8 h-8 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div>
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/30 flex items-center justify-center mb-6">
+                            <span class="font-display font-bold text-white">3</span>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-neutral-900 mb-3">开始生成</h3>
+                        <p class="text-neutral-600 leading-relaxed mb-4">在 Claude 中直接调用视频生成工具</p>
+                        <div class="bg-neutral-900 rounded-lg p-4">
+                            <p class="text-sm text-green-400 font-medium">"生成视频，文本：如果防止上头，分镜数5，音量调到5倍"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="install" class="py-20 px-6 lg:px-8 bg-white/30 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">快速安装</h2>
+                <p class="text-lg text-neutral-600 max-w-2xl mx-auto">几分钟内即可开始使用</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="glass-card rounded-2xl p-8">
+                    <h3 class="font-display font-semibold text-xl text-neutral-900 mb-6">作为独立脚本使用</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-neutral-900 rounded-lg p-4 overflow-x-auto">
+                            <code class="text-sm text-green-400">python generate_video.py -t "你的文本内容" -s 5 -v 1.0</code>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4 text-sm">
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-neutral-700">-t, --text</span>
+                                    <span class="text-neutral-500 block">要输入的文本内容（必需）</span>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-neutral-700">-s, --slider</span>
+                                    <span class="text-neutral-500 block">分镜滑块值 (5-30)，默认 5</span>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-neutral-700">-v, --volume</span>
+                                    <span class="text-neutral-500 block">TTS音量值 (0.1-5.0)，默认 1.0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-neutral-700">--headless</span>
+                                    <span class="text-neutral-500 block">无头模式运行浏览器</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MCP Tools Section -->
+    <section class="py-20 px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">MCP 工具</h2>
+                <p class="text-lg text-neutral-600 max-w-2xl mx-auto">强大的工具集，助力您的 AI 工作流</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- Tool 1 -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg icon-gradient flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-neutral-900">generate_video_tool</h3>
+                    </div>
+                    <p class="text-neutral-600 mb-4">自动生成视频，支持自定义参数</p>
+                    <div class="bg-neutral-100 rounded-lg p-4">
+                        <code class="text-xs text-neutral-700">
+                            • text: 要输入的文本内容<br>
+                            • slider_value: 分镜滑块值 (5-30)<br>
+                            • tts_volume: TTS音量值 (0.1-5.0)<br>
+                            • url: Streamlit 应用 URL<br>
+                            • headless: 是否使用无头模式<br>
+                            • timeout: 超时时间（秒）
+                        </code>
+                    </div>
+                    <p class="text-sm text-neutral-500 mt-3">返回: 下载的视频文件路径列表</p>
+                </div>
+                
+                <!-- Tool 2 -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg icon-gradient flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-neutral-900">Resources</h3>
+                    </div>
+                    <p class="text-neutral-600 mb-4">缓存管理资源</p>
+                    <div class="bg-neutral-100 rounded-lg p-4">
+                        <code class="text-xs text-neutral-700">
+                            • cache://videos: 获取缓存目录中的所有视频文件列表
+                        </code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 px-6 lg:px-8 bg-white/30 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">常见问题</h2>
+                <p class="text-lg text-neutral-600 max-w-2xl mx-auto">快速解答您的疑问</p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto space-y-4">
+                <details class="glass-card rounded-xl overflow-hidden">
+                    <summary class="p-6 font-display font-medium text-neutral-900 flex items-center justify-between">
+                        生成的视频文件保存在哪里？
+                        <svg class="w-5 h-5 text-brand-500 transform transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="px-6 pb-6 text-neutral-600">
+                        生成的视频文件会保存到 <code class="bg-neutral-100 px-2 py-1 rounded text-sm">.cache/videos/</code> 目录，文件名格式为：{时间戳}_{文本前20字}_{原始文件名}.mp4，例如：20250415_143022_这是一段测试文本_video_0.mp4
+                    </div>
+                </details>
+                
+                <details class="glass-card rounded-xl overflow-hidden">
+                    <summary class="p-6 font-display font-medium text-neutral-900 flex items-center justify-between">
+                        如何在 Claude Desktop 中配置？
+                        <svg class="w-5 h-5 text-brand-500 transform transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="px-6 pb-6 text-neutral-600">
+                        在 Claude Desktop 的配置文件中添加 MCP 服务器配置：<br>
+                        <span class="text-sm">macOS: ~/Library/Application Support/Claude/claude_desktop_config.json</span><br>
+                        <span class="text-sm">Windows: %APPDATA%\Claude\claude_desktop_config.json</span>
+                    </div>
+                </details>
+                
+                <details class="glass-card rounded-xl overflow-hidden">
+                    <summary class="p-6 font-display font-medium text-neutral-900 flex items-center justify-between">
+                        支持哪些参数配置？
+                        <svg class="w-5 h-5 text-brand-500 transform transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="px-6 pb-6 text-neutral-600">
+                        支持多种参数配置：文本内容、分镜滑块值（5-30）、TTS音量值（0.1-5.0）、Streamlit 应用 URL、无头模式开关、超时时间等，满足不同场景需求。
+                    </div>
+                </details>
+                
+                <details class="glass-card rounded-xl overflow-hidden">
+                    <summary class="p-6 font-display font-medium text-neutral-900 flex items-center justify-between">
+                        如何使用无头模式？
+                        <svg class="w-5 h-5 text-brand-500 transform transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="px-6 pb-6 text-neutral-600">
+                        在命令行中添加 <code class="bg-neutral-100 px-2 py-1 rounded text-sm">--headless</code> 参数即可启用无头模式，浏览器将在后台运行，不会显示界面。
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 lg:px-8 bg-neutral-900">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg icon-gradient flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <span class="font-display font-medium text-white">Pixelle Video MCP Server</span>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <a href="https://github.com/AIDC-AI/Pixelle-Video" target="_blank" class="text-neutral-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="text-neutral-400 hover:text-white transition-colors text-sm">MIT License</a>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-8 border-t border-neutral-800 text-center">
+                <p class="text-sm text-neutral-500">© 2024 Pixelle Video MCP Server. 基于 FastMCP 构建。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
